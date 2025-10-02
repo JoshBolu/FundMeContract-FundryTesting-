@@ -11,6 +11,9 @@ contract FundMeTest is Test {
     address USER = makeAddr("joshua");
     uint256 constant STARTING_BALANCE = 10 ether;
 
+    uint256 constant SEND_ETHER = 1 ether;
+    uint256 constant GAS_PRICE = 1;
+
     function setUp() public {
         // fundMe = new FundMe(0x694AA1769357215DE4FAC081bf1f309aDC325306);
         DeployFundMe deployFundMe = new DeployFundMe();
@@ -41,13 +44,93 @@ contract FundMeTest is Test {
     }
 
     function testFundUpdatesFundedDataStructure() public {
-        vm.prank(USER); // The next tx will be sent by address(1)
+        vm.prank(USER); // The next tx will be sent by USER
         // fundMe.fund{value: 1e18}();
         // uint256 amountFunded = fundMe.s_addressToAmountFunded(address(1));
         // assertEq(amountFunded, 1e18);
 
-        fundMe.fund{value: 10 ether}();
+        fundMe.fund{value: SEND_ETHER}();
         uint256 amountFunded = fundMe.getAddressToAmountFunded(USER);
-        assertEq(amountFunded, 10 ether);
+        assertEq(amountFunded, SEND_ETHER);
+    }
+
+    function testAddOwnerToArrayOfFunders() public {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_ETHER}();
+
+        address funder = fundMe.getFunder(0);
+        assertEq(funder, USER);
+    }
+
+    modifier funded() {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_ETHER}();
+        _;
+    }
+
+    function testOnlyOwnerCanWithdraw() public funded {
+        vm.prank(USER);
+        vm.expectRevert();
+        fundMe.withdraw();
+    }
+
+    function testWithdrawWithASingleFunder() public funded {
+        // Arrange
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Act
+        // uint256 gasStart = gasleft(); // 1000
+        // vm.txGasPrice(GAS_PRICE); // 200
+
+        vm.prank(fundMe.getOwner());
+        fundMe.withdraw();
+
+        // uint256 gasEnd = gasleft(); // 800
+        // uint256 gasUsed = (gasStart - gasEnd) * tx.gasprice;
+        // console.log(tx.gasprice);
+        // console.log(gasStart);
+        // console.log(gasEnd);
+        // console.log(gasUsed);
+
+        // Assert
+        uint256 endingOwnerBalance = fundMe.getOwner().balance;
+        uint256 endingFundMeBalance = address(fundMe).balance;
+        assertEq(endingFundMeBalance, 0);
+        assertEq(
+            startingFundMeBalance + startingOwnerBalance,
+            endingOwnerBalance
+        );
+    }
+
+    function testWithdrawFromMultipleFunders() public funded {
+        // Arrange
+        // we use uint160 because that the way we can convert it to address
+        uint160 numberOfFunders = 10;
+        uint160 startingFunderIndex = 1;
+        for (uint160 i = startingFunderIndex; i < numberOfFunders; i++) {
+            // vm.prank(address(i)); to create an address from a number
+            // deal(address(i), SEND_ETHER); to send ether to that address
+            // we can use hoax to do both of the above in one line
+            hoax(address(i), SEND_ETHER);
+            // fund the fundMe contract from that address
+            fundMe.fund{value: SEND_ETHER}();
+        }
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Act
+        vm.startPrank(fundMe.getOwner());
+        fundMe.withdraw();
+        vm.stopPrank();
+
+        // Assert
+        // verify that the fundMe contract balance was withdrawn
+        assertEq(address(fundMe).balance, 0);
+        // verify that the owner received the funds by adding his Ether balance with what he just recieved
+        assertEq(
+            startingFundMeBalance + startingOwnerBalance,
+            fundMe.getOwner().balance
+        );
     }
 }
