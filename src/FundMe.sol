@@ -15,7 +15,7 @@ error CallFailed();
 contract FundMe {
     using PriceConverter for uint256;
 
-    uint public constant MINIMUM_USD = 5 * 1e18; // immutable naming convention prefers to capitaize
+    uint256 public constant MINIMUM_USD = 5 * 1e18; // immutable naming convention prefers to capitaize
     // 351 * 210000000 - execution when theres constant
     // 2451 * 210000000 - execution cost when ther's no constant
 
@@ -37,10 +37,7 @@ contract FundMe {
         // 1 How do we send ETH to this contract
         // 2 How do we get the price of ETH in USD
         // 3 How do we convert ETH to USD
-        require(
-            msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD,
-            "Didn't send enough Ether"
-        ); // 1e18 == 1 * 10 ** 18 == 1000000000000000000
+        require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "Didn't send enough Ether"); // 1e18 == 1 * 10 ** 18 == 1000000000000000000
         // 1 ETH == 1000000000000000000 wei
         s_funders.push(msg.sender);
         s_addressToAmountFunded[msg.sender] = msg.value;
@@ -48,28 +45,18 @@ contract FundMe {
 
     function cheaperWithdraw() public onlyOwner {
         uint256 fundersLength = s_funders.length;
-        for (
-            uint256 fundersIndex = 0;
-            fundersIndex < fundersLength;
-            fundersIndex++
-        ) {
+        for (uint256 fundersIndex = 0; fundersIndex < fundersLength; fundersIndex++) {
             address funder = s_funders[fundersIndex];
             s_addressToAmountFunded[funder] = 0;
         }
         s_funders = new address[](0);
-        (bool callSuccess, ) = payable(msg.sender).call{
-            value: address(this).balance
-        }("");
+        (bool callSuccess,) = payable(msg.sender).call{value: address(this).balance}("");
         require(callSuccess, "Call failed");
     }
 
     function withdraw() public onlyOwner {
         // starting index; ending index; step amount
-        for (
-            uint256 funderIndex = 0;
-            funderIndex < s_funders.length;
-            funderIndex++
-        ) {
+        for (uint256 funderIndex = 0; funderIndex < s_funders.length; funderIndex++) {
             address funder = s_funders[funderIndex];
             s_addressToAmountFunded[funder] = 0;
         }
@@ -84,9 +71,7 @@ contract FundMe {
         // bool sendSuccess = payable(msg.sender).send(address(this).balance);
         // require(sendSuccess, "Send failed");
         // // call This is the widely used way of sending transactions
-        (bool callSuccess, ) = payable(msg.sender).call{
-            value: address(this).balance
-        }("");
+        (bool callSuccess,) = payable(msg.sender).call{value: address(this).balance}("");
         require(callSuccess, "Call failed");
         // if(!callSuccess){ revert CallFailed();} - // saves gas
 
@@ -121,9 +106,7 @@ contract FundMe {
      *  @param fundingAddress the address of the funder
      *  @return the amount funded
      */
-    function getAddressToAmountFunded(
-        address fundingAddress
-    ) public view returns (uint256) {
+    function getAddressToAmountFunded(address fundingAddress) public view returns (uint256) {
         return s_addressToAmountFunded[fundingAddress];
     }
 

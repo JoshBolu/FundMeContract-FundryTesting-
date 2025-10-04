@@ -10,8 +10,8 @@ contract InteractionsTest is Test {
     FundMe fundMe;
 
     address USER = makeAddr("joshua");
-    uint256 constant SEND_ETHER = 1 ether;
-    uint256 constant STARTING_BALANCE = 10 ether;
+    uint256 constant SEND_ETHER = 0.1 ether;
+    uint256 constant STARTING_BALANCE = 100 ether;
     uint256 constant GAS_PRICE = 1;
 
     function setUp() external {
@@ -22,6 +22,8 @@ contract InteractionsTest is Test {
 
     function testUserCanFundInteractions() public {
         FundFundMe fundFundMe = new FundFundMe();
+        // vm.prank(USER);
+        // vm.deal(USER, 1 ether);
         fundFundMe.fundFundMe(address(fundMe));
 
         WithdrawFundMe withdrawFundMe = new WithdrawFundMe();

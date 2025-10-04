@@ -23,17 +23,17 @@ contract FundFundMe is Script {
             "FundMe",
             block.chainid
         );
-        // vm.startBroadcast();
+        vm.startBroadcast();
         fundFundMe(mostRecentlyDeployed);
-        // vm.stopBroadcast();
+        vm.stopBroadcast();
     }
 }
 
 contract WithdrawFundMe is Script {
     function withdrawFundMe(address mostRecentlyDeployed) public {
-        // vm.startBroadcast();
+        vm.startBroadcast();
         FundMe(payable(mostRecentlyDeployed)).withdraw();
-        // vm.stopBroadcast();
+        vm.stopBroadcast();
     }
 
     function run() external {
@@ -41,8 +41,6 @@ contract WithdrawFundMe is Script {
             "FundMe",
             block.chainid
         );
-        vm.startBroadcast();
         withdrawFundMe(mostRecentlyDeployed);
-        vm.stopBroadcast();
     }
 }
