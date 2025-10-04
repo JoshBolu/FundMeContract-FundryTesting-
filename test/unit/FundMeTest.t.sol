@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
-import {FundMe} from "../src/FundMe.sol";
-import {DeployFundMe} from "../script/DeployFundMe.s.sol";
+import {FundMe} from "../../src/FundMe.sol";
+import {DeployFundMe} from "../../script/DeployFundMe.s.sol";
 
 contract FundMeTest is Test {
     FundMe fundMe;
@@ -100,6 +100,37 @@ contract FundMeTest is Test {
         assertEq(
             startingFundMeBalance + startingOwnerBalance,
             endingOwnerBalance
+        );
+    }
+
+    function testWithdrawFromMultipleFundersCheaper() public funded {
+        // Arrange
+        // we use uint160 because that the way we can convert it to address
+        uint160 numberOfFunders = 10;
+        uint160 startingFunderIndex = 1;
+        for (uint160 i = startingFunderIndex; i < numberOfFunders; i++) {
+            // vm.prank(address(i)); to create an address from a number
+            // deal(address(i), SEND_ETHER); to send ether to that address
+            // we can use hoax to do both of the above in one line
+            hoax(address(i), SEND_ETHER);
+            // fund the fundMe contract from that address
+            fundMe.fund{value: SEND_ETHER}();
+        }
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Act
+        vm.startPrank(fundMe.getOwner());
+        fundMe.cheaperWithdraw();
+        vm.stopPrank();
+
+        // Assert
+        // verify that the fundMe contract balance was withdrawn
+        assertEq(address(fundMe).balance, 0);
+        // verify that the owner received the funds by adding his Ether balance with what he just recieved
+        assertEq(
+            startingFundMeBalance + startingOwnerBalance,
+            fundMe.getOwner().balance
         );
     }
 
